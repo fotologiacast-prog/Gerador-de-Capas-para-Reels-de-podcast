@@ -1,0 +1,5 @@
+{
+  "name": "Gerador de Thumbnails Desfocadas",
+  "description": "Uma aplicação para gerar automaticamente thumbnails desfocadas a partir de um arquivo de vídeo. Crie capas para redes sociais como o Instagram.",
+  "requestFramePermissions": []
+}
