@@ -63,7 +63,7 @@ const App: React.FC = () => {
                         originalBlur: dataUrl,
                         finalImage: dataUrl,
                         text: '',
-                        highlightedWord: '',
+                        highlightedWords: [],
                         fontSize: 70,
                         cropPositionX: cropX,
                     });
@@ -142,7 +142,7 @@ const App: React.FC = () => {
 
     }, [videoFile, generateSingleFrame]);
     
-    const handleCardUpdate = useCallback((id: string, field: keyof Omit<GeneratedImage, 'id' | 'originalBlur'>, value: string | number) => {
+    const handleCardUpdate = useCallback((id: string, field: keyof Omit<GeneratedImage, 'id' | 'originalBlur'>, value: any) => {
         setGeneratedImages(prevImages =>
             prevImages.map(img => (img.id === id ? { ...img, [field]: value } : img))
         );

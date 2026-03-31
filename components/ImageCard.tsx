@@ -8,7 +8,7 @@ micIcon.src = `data:image/svg+xml,${encodeURIComponent('<svg id="fi_2882877" ena
 
 interface ImageCardProps {
     image: GeneratedImage;
-    onUpdate: (id: string, field: keyof Omit<GeneratedImage, 'id' | 'originalBlur'>, value: string | number) => void;
+    onUpdate: (id: string, field: keyof Omit<GeneratedImage, 'id' | 'originalBlur'>, value: any) => void;
     globalHighlightColor: string;
     onRegenerate: (id: string) => void;
     isRegenerating: boolean;
@@ -164,7 +164,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onUpdate, globalHig
             // Center the actual text block vertically within the fixed-height box
             const actualTextBlockHeight = lines.length * LINE_HEIGHT;
             const startY = boxY + boxHeight / 2 - (actualTextBlockHeight / 2) + (LINE_HEIGHT / 2);
-            const highlight = image.highlightedWord.trim().toLowerCase();
+            const highlights = image.highlightedWords || [];
             
             lines.forEach((currentLine, i) => {
                 const lineY = startY + (i * LINE_HEIGHT);
@@ -173,7 +173,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onUpdate, globalHig
                 let totalLineWidth = 0;
                 lineWords.forEach(word => {
                     const cleanWord = word.replace(/[.,!?;:]/g, '').toLowerCase();
-                    const isHighlighted = highlight && cleanWord === highlight;
+                    const isHighlighted = highlights.includes(cleanWord);
                     ctx.font = isHighlighted ? FONT_BOLD : FONT_NORMAL;
                     totalLineWidth += ctx.measureText(word).width;
                 });
@@ -184,7 +184,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onUpdate, globalHig
 
                 lineWords.forEach(word => {
                     const cleanWord = word.replace(/[.,!?;:]/g, '').toLowerCase();
-                    const isHighlighted = highlight && cleanWord === highlight;
+                    const isHighlighted = highlights.includes(cleanWord);
                     
                     ctx.font = isHighlighted ? FONT_BOLD : FONT_NORMAL;
                     ctx.fillStyle = isHighlighted ? globalHighlightColor : 'white';
@@ -198,7 +198,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onUpdate, globalHig
             onUpdate(image.id, 'finalImage', newFinalImage);
         };
         bgImage.src = image.originalBlur;
-    }, [image.text, image.highlightedWord, image.originalBlur, globalHighlightColor, image.fontSize, onUpdate, image.id]);
+    }, [image.text, image.highlightedWords, image.originalBlur, globalHighlightColor, image.fontSize, onUpdate, image.id]);
 
     useEffect(() => {
         const render = () => drawImageWithText();
@@ -207,7 +207,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onUpdate, globalHig
         } else {
             micIcon.onload = render;
         }
-    }, [image.originalBlur, image.text, image.highlightedWord, globalHighlightColor, image.fontSize, drawImageWithText]);
+    }, [image.originalBlur, image.text, image.highlightedWords, globalHighlightColor, image.fontSize, drawImageWithText]);
 
     const handleDownload = () => {
         const link = document.createElement('a');
@@ -229,8 +229,25 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onUpdate, globalHig
         if (!textareaRef.current) return;
         const textarea = textareaRef.current;
         const selection = textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
-        if (selection && selection.length > 0) {
-            onUpdate(image.id, 'highlightedWord', selection);
+        const trimmedSelection = selection.trim().toLowerCase().replace(/[.,!?;:]/g, '');
+        if (trimmedSelection && trimmedSelection.length > 0) {
+            const newWords = trimmedSelection.split(/\s+/);
+            let updatedHighlights = [...(image.highlightedWords || [])];
+            let changed = false;
+            
+            newWords.forEach(w => {
+                if (updatedHighlights.includes(w)) {
+                    updatedHighlights = updatedHighlights.filter(hw => hw !== w);
+                    changed = true;
+                } else {
+                    updatedHighlights.push(w);
+                    changed = true;
+                }
+            });
+            
+            if (changed) {
+                onUpdate(image.id, 'highlightedWords', updatedHighlights);
+            }
         }
     };
     
@@ -312,8 +329,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({ image, onUpdate, globalHig
                     placeholder="Texto Principal..."
                     value={image.text}
                     onChange={(e) => {
-                        if (image.highlightedWord) {
-                            onUpdate(image.id, 'highlightedWord', '');
+                        if (image.highlightedWords && image.highlightedWords.length > 0) {
+                            onUpdate(image.id, 'highlightedWords', []);
                         }
                         onUpdate(image.id, 'text', e.target.value)
                     }}
